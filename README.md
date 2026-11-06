@@ -1,12 +1,47 @@
+<div align="center">
+
+<img src="src/TaskbarWidgets/Assets/TaskbarWidgets-256.png" alt="Logo Taskbar Widgets" width="128" height="128" />
+
 # Taskbar Widgets
 
-Widgets compacts affichés **dans la barre des tâches de Windows 11** (CPU, RAM, GPU, température, débit réseau…),
-avec un système de plugins pour écrire les vôtres en C#.
+**Vos indicateurs système, directement dans la barre des tâches de Windows 11.**
 
-```
-| CPU  | RAM  | GPU  | TEMP  | D
-| 28%  | 89%  | 16%  | 72 °C | 660 B/s
-```
+CPU · RAM · GPU · température · débit réseau, et vos propres widgets en C#.
+
+[![Windows 11](https://img.shields.io/badge/Windows-11-0078D4?logo=windows11&logoColor=white)](#prérequis)
+[![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![WPF](https://img.shields.io/badge/UI-WPF-68217A)](#fonctionnement)
+[![Plugins](https://img.shields.io/badge/plugins-C%23-239120?logo=csharp&logoColor=white)](#écrire-un-widget)
+[![Licence MIT](https://img.shields.io/badge/licence-MIT-green)](LICENSE)
+
+<img src="docs/screenshot.png" alt="Widgets CPU, RAM, GPU, TEMP, réseau et durée de fonctionnement dans la barre des tâches" width="520" />
+
+</div>
+
+---
+
+## Table des matières
+
+- [Points forts](#points-forts)
+- [Prérequis](#prérequis)
+- [Compiler et lancer](#compiler-et-lancer)
+  - [Version distribuable : `dist\`](#version-distribuable--dist)
+- [Utilisation](#utilisation)
+- [Configuration](#configuration)
+- [Écrire un widget](#écrire-un-widget)
+- [Fonctionnement](#fonctionnement)
+- [Structure](#structure)
+- [Licence](#licence)
+
+## Points forts
+
+- 📊 **Widgets intégrés** : processeur, mémoire, GPU, température, réception et envoi réseau.
+- 🧩 **Plugins** : une DLL .NET dérivant de `TaskbarWidget` suffit pour ajouter un widget.
+- 🖥️ **Multi-écran** : affichage sur la barre des tâches de l'écran de votre choix.
+- ⚡ **Configuration en direct** : `settings.json` est appliqué dès son enregistrement.
+- 🌗 **Thème clair / sombre** suivi automatiquement, masquage en plein écran.
+- 🪶 **Léger** : environ 0,3 % d'un cœur processeur en fonctionnement.
+- 📦 **Autonome** : un seul `.exe`, runtime .NET inclus, rien à installer.
 
 ## Prérequis
 
