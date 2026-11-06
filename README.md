@@ -153,3 +153,7 @@ samples/…Sample.Uptime/     exemple de plugin
 tools/publish.ps1           génère dist\ (exécutable autonome prêt à l'emploi)
 tools/make-icon.ps1         génère l'icône de l'exécutable (src/TaskbarWidgets/Assets/TaskbarWidgets.ico)
 ```
+
+## Licence
+
+Distribué sous licence [MIT](LICENSE).

@@ -65,6 +65,6 @@ if (-not $NoSample) {
     Copy-Item (Join-Path $root "samples\TaskbarWidgets.Sample.Uptime\bin\dist\TaskbarWidgets.Sample.Uptime.dll") (Join-Path $dist "Widgets")
 }
 
-Copy-Item (Join-Path $root "README.md") $dist
+Copy-Item (Join-Path $root "README.md"), (Join-Path $root "LICENSE") $dist
 Write-Host "`ndist prêt :" -ForegroundColor Green
 Get-ChildItem $dist -Recurse -File | ForEach-Object { "{0,-45} {1,8:N1} Mo" -f $_.FullName.Substring($dist.Length + 1), ($_.Length / 1MB) }
