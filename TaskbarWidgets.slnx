@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/samples/">
+    <Project Path="samples/TaskbarWidgets.Sample.Uptime/TaskbarWidgets.Sample.Uptime.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/TaskbarWidgets.Sdk/TaskbarWidgets.Sdk.csproj" />
+    <Project Path="src/TaskbarWidgets/TaskbarWidgets.csproj" />
+  </Folder>
+</Solution>

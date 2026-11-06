@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>TaskbarWidgets</AssemblyName>
+    <RootNamespace>TaskbarWidgets</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Icône générée par tools/make-icon.ps1 -->
+    <ApplicationIcon>Assets\TaskbarWidgets.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\TaskbarWidgets.ico" />
+    <None Remove="Assets\TaskbarWidgets-256.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TaskbarWidgets.Sdk\TaskbarWidgets.Sdk.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Exemple de plugin : une simple bibliothèque qui référence TaskbarWidgets.Sdk. -->
+  <PropertyGroup>
+    <RootNamespace>TaskbarWidgets.Sample.Uptime</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Private=false : le SDK est fourni par l'application hôte, il ne doit pas être copié avec le plugin. -->
+    <ProjectReference Include="..\..\src\TaskbarWidgets.Sdk\TaskbarWidgets.Sdk.csproj" Private="false" />
+  </ItemGroup>
+
+  <!-- Pratique en développement : copie le plugin dans le dossier Widgets de l'application compilée. -->
+  <Target Name="CopyToHostWidgets" AfterTargets="Build">
+    <PropertyGroup>
+      <HostWidgetsDir>$(MSBuildThisFileDirectory)..\..\src\TaskbarWidgets\bin\$(Configuration)\$(TargetFramework)\Widgets\</HostWidgetsDir>
+    </PropertyGroup>
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(HostWidgetsDir)" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>
