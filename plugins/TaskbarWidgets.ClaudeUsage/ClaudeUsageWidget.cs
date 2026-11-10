@@ -19,8 +19,7 @@ namespace TaskbarWidgets.ClaudeUsage;
 /// </remarks>
 public sealed class ClaudeUsageWidget : TaskbarWidget
 {
-    private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
-    private static readonly int[] RefreshChoices = [1, 2, 5, 10, 15, 30, 60];
+    private static readonly CultureInfo French = ClaudeOptions.French;
     private static readonly Brush SevenDayFill = Frozen(Color.FromRgb(0xE9, 0xC4, 0x6A));
 
     private TimeSpan _interval = TimeSpan.FromMinutes(5);
@@ -37,14 +36,7 @@ public sealed class ClaudeUsageWidget : TaskbarWidget
     public override double MinValueWidth => 62;
     public override TimeSpan UpdateInterval => _interval;
 
-    public override IReadOnlyList<WidgetMenuOption> MenuOptions { get; } =
-    [
-        new WidgetMenuOption(
-            "refreshMinutes", "Actualisation", "5",
-            RefreshChoices.Select(m => new WidgetMenuChoice(
-                m.ToString(CultureInfo.InvariantCulture),
-                m == 1 ? "Toutes les minutes" : m == 60 ? "Toutes les heures" : $"Toutes les {m} minutes")).ToList()),
-    ];
+    public override IReadOnlyList<WidgetMenuOption> MenuOptions { get; } = [ClaudeOptions.Refresh];
 
     /// <summary>Remplissage de la barre « 5 heures » (0 à 1).</summary>
     public double? FiveHourLevel
@@ -65,8 +57,7 @@ public sealed class ClaudeUsageWidget : TaskbarWidget
 
     public override void Initialize(WidgetContext context)
     {
-        double minutes = Math.Clamp(context.GetOption("refreshMinutes", 5.0), 1, 24 * 60);
-        _interval = TimeSpan.FromMinutes(minutes);
+        _interval = ClaudeOptions.ReadRefresh(context);
         _credentials = new ClaudeCredentials(context.GetOption("credentialsFile"));
         Value = "…";
         ToolTip = "Claude Code : lecture de l'utilisation…";
@@ -74,24 +65,14 @@ public sealed class ClaudeUsageWidget : TaskbarWidget
 
     public override void Update()
     {
-        string? token = _credentials.TryGetToken(out string? problem);
-        if (token is null)
-        {
-            ShowProblem(problem ?? "Connexion Claude Code introuvable.");
-            return;
-        }
-
         try
         {
-            _last = ClaudeUsageClient.Fetch(token);
+            _last = UsageService.Get(_credentials);
             Show(_last, problem: null);
         }
         catch (ClaudeUsageException ex)
         {
-            string message = $"{ex.Message}\nJeton lu dans : {_credentials.Source}";
-            if (ClaudeCredentials.ShapeHint(token) is { } hint)
-                message += $"\n{hint}";
-            ShowProblem(message);
+            ShowProblem(ex.Message);
         }
     }
 
@@ -133,7 +114,7 @@ public sealed class ClaudeUsageWidget : TaskbarWidget
         tip.Append(Describe("Fenêtre de 7 jours", snapshot.SevenDay, now, sameDayFormat: false));
         foreach (var other in snapshot.Others)
             tip.Append(Describe(Prettify(other.Key), other, now, sameDayFormat: false));
-        tip.Append($"\nMis à jour à {snapshot.FetchedAt:HH:mm} · actualisation {RefreshText()}");
+        tip.Append($"\nMis à jour à {snapshot.FetchedAt:HH:mm} · actualisation {ClaudeOptions.RefreshText(_interval)}");
         if (problem is not null)
             tip.Append($"\n⚠ {problem}");
         tip.Append("\nClic : ouvrir la page d'utilisation de claude.ai");
@@ -161,26 +142,9 @@ public sealed class ClaudeUsageWidget : TaskbarWidget
         var local = reset.ToLocalTime();
         string when = sameDayFormat && local.Date == now.Date
             ? $"à {local:HH:mm}"
-            : $"le {local.ToString("dddd d MMMM 'à' HH:mm", French)}";
-        return $"{line} — réinitialisation {when} (dans {Remaining(reset - now)})";
+            : $"le {ClaudeOptions.LongDate(reset)}";
+        return $"{line} — réinitialisation {when} (dans {ClaudeOptions.Remaining(reset - now)})";
     }
-
-    private static string Remaining(TimeSpan span)
-    {
-        if (span.TotalDays >= 1)
-            return $"{(int)span.TotalDays} j {span.Hours} h";
-        if (span.TotalHours >= 1)
-            return $"{(int)span.TotalHours} h {span.Minutes:00} min";
-        return $"{Math.Max(1, (int)Math.Ceiling(span.TotalMinutes))} min";
-    }
-
-    private string RefreshText()
-        => _interval.TotalMinutes switch
-        {
-            <= 1 => "toutes les minutes",
-            60 => "toutes les heures",
-            var m => $"toutes les {m:0} minutes",
-        };
 
     /// <summary>« seven_day_opus » → « Fenêtre de 7 jours (opus) ».</summary>
     private static string Prettify(string key)

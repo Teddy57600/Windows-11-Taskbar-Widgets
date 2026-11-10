@@ -29,6 +29,7 @@ CPU · RAM · GPU · température · débit réseau, et vos propres widgets en C
 - [Utilisation](#utilisation)
 - [Configuration](#configuration)
 - [Widget Claude Code](#widget-claude-code)
+  - [Prévision sur 7 jours](#prévision-sur-7-jours)
 - [Écrire un widget](#écrire-un-widget)
 - [Fonctionnement](#fonctionnement)
 - [Structure](#structure)
@@ -37,7 +38,7 @@ CPU · RAM · GPU · température · débit réseau, et vos propres widgets en C
 ## Points forts
 
 - 📊 **Widgets intégrés** : processeur, mémoire, GPU, température, réception et envoi réseau.
-- 🤖 **Claude Code** : utilisation de l'abonnement sur les fenêtres de 5 heures et de 7 jours.
+- 🤖 **Claude Code** : utilisation de l'abonnement sur 5 heures et 7 jours, et prévision au prochain reset.
 - 🧩 **Plugins** : une DLL .NET dérivant de `TaskbarWidget` suffit pour ajouter un widget.
 - 🖥️ **Multi-écran** : affichage sur la barre des tâches de l'écran de votre choix.
 - ⚡ **Configuration en direct** : `settings.json` est appliqué dès son enregistrement.
@@ -158,6 +159,28 @@ En cas d'erreur temporaire, les dernières valeurs restent affichées et l'info-
 
 > Ce service est celui qu'utilise Claude Code ; il n'est pas documenté publiquement et peut évoluer.
 
+### Prévision sur 7 jours
+
+Le widget `claude-forecast` (libellé **PRÉV 7J**) estime l'utilisation de la fenêtre de 7 jours **au moment de sa
+réinitialisation**, en prolongeant le rythme de consommation jusqu'au reset :
+
+```
+prévision = utilisation actuelle + rythme × temps restant avant le reset
+```
+
+- **couleur** : vert sous 80 %, orange de 80 à 100 %, rouge au-delà (sauf si `color` est fixée dans `settings.json`) ;
+- **info-bulle** : date du reset, utilisation actuelle, rythme en % par jour, date à laquelle 100 % serait atteint
+  si la prévision dépasse la limite, et marge quotidienne pour finir à 100 % ;
+- **méthode** (clic droit > *Réglages des widgets* > *Claude Code – prévision 7 jours* > *Méthode de prévision*,
+  ou l'option `method`) :
+  - `window` (par défaut) : rythme moyen depuis le début de la fenêtre, le plus stable ;
+  - `24h` : rythme des dernières 24 heures, plus réactif. Il s'appuie sur un historique local
+    (`%APPDATA%\TaskbarWidgets\data\claude-forecast\history-7d.json`, un point toutes les 10 minutes) et se rabat
+    sur la moyenne de la fenêtre tant que cet historique couvre moins de 3 heures.
+
+Pendant les 6 premières heures d'une fenêtre, la prévision n'est pas affichée (trop instable). Les deux widgets
+Claude partagent la même lecture du service : activer les deux ne double pas les requêtes.
+
 ## Écrire un widget
 
 1. Créez une bibliothèque de classes `net10.0-windows` avec `<UseWPF>true</UseWPF>`.
@@ -222,7 +245,7 @@ si le bouton Widgets de Windows affiche la météo (il est alors plus large) ou 
 ```
 src/TaskbarWidgets.Sdk/     API des widgets (TaskbarWidget, WidgetContext, PdhQuery, Units)
 src/TaskbarWidgets/         application hôte WPF + widgets intégrés
-plugins/…ClaudeUsage/       plugin Claude Code (vue personnalisée à deux barres, option de menu)
+plugins/…ClaudeUsage/       plugins Claude Code : utilisation (vue à deux barres) et prévision 7 jours
 samples/…Sample.Uptime/     exemple de plugin minimal
 tools/publish.ps1           génère dist\ (exécutable autonome prêt à l'emploi)
 tools/make-icon.ps1         génère l'icône de l'exécutable (src/TaskbarWidgets/Assets/TaskbarWidgets.ico)
