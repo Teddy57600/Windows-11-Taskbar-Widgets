@@ -115,6 +115,9 @@ public abstract class TaskbarWidget : INotifyPropertyChanged, IDisposable
     /// <summary>Vue WPF personnalisée (thread UI). <c>null</c> = vue standard. Son DataContext est le widget.</summary>
     public virtual FrameworkElement? CreateView() => null;
 
+    /// <summary>Options réglables depuis le menu contextuel (aucune par défaut).</summary>
+    public virtual IReadOnlyList<WidgetMenuOption> MenuOptions => [];
+
     /// <summary>Clic gauche sur le widget (thread UI).</summary>
     public virtual void OnClick() { }
 

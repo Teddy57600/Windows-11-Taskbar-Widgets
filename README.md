@@ -28,6 +28,7 @@ CPU · RAM · GPU · température · débit réseau, et vos propres widgets en C
   - [Version distribuable : `dist\`](#version-distribuable--dist)
 - [Utilisation](#utilisation)
 - [Configuration](#configuration)
+- [Widget Claude Code](#widget-claude-code)
 - [Écrire un widget](#écrire-un-widget)
 - [Fonctionnement](#fonctionnement)
 - [Structure](#structure)
@@ -36,6 +37,7 @@ CPU · RAM · GPU · température · débit réseau, et vos propres widgets en C
 ## Points forts
 
 - 📊 **Widgets intégrés** : processeur, mémoire, GPU, température, réception et envoi réseau.
+- 🤖 **Claude Code** : utilisation de l'abonnement sur les fenêtres de 5 heures et de 7 jours.
 - 🧩 **Plugins** : une DLL .NET dérivant de `TaskbarWidget` suffit pour ajouter un widget.
 - 🖥️ **Multi-écran** : affichage sur la barre des tâches de l'écran de votre choix.
 - ⚡ **Configuration en direct** : `settings.json` est appliqué dès son enregistrement.
@@ -121,6 +123,41 @@ Options réseau : `interface` (ne compter que les cartes dont le nom contient ce
 
 Les erreurs sont journalisées dans `%APPDATA%\TaskbarWidgets\log.txt`.
 
+## Widget Claude Code
+
+Le plugin `claude-usage` (livré dans `dist\Widgets\`) affiche l'utilisation de votre abonnement Claude Code
+(Pro ou Max), comme la commande `/usage` :
+
+- **barre de gauche** (orange) : fenêtre glissante de **5 heures** ;
+- **barre de droite** (sable) : fenêtre de **7 jours** ;
+- **valeur** : `42% · 18%` (5 h · 7 j) ; **info-bulle** : heures de réinitialisation et temps restant ;
+- **clic** : ouvre la page d'utilisation de claude.ai.
+
+**Fréquence de mise à jour** : clic droit > *Réglages des widgets* > *Claude Code – utilisation* > *Actualisation*
+(de toutes les minutes à toutes les heures, 5 minutes par défaut), ou l'option `refreshMinutes` dans `settings.json` :
+
+```jsonc
+{ "id": "claude-usage", "enabled": true, "options": { "refreshMinutes": "10" } }
+```
+
+**Connexion** : le widget utilise la connexion de Claude Code en ligne de commande (`/login`), sans jamais
+renouveler ni modifier le jeton. Il le cherche dans cet ordre :
+
+1. le fichier indiqué par l'option `credentialsFile` ;
+2. `%CLAUDE_CONFIG_DIR%\.credentials.json`, puis `%USERPROFILE%\.claude\.credentials.json` ;
+3. en dernier recours, la variable d'environnement `CLAUDE_CODE_OAUTH_TOKEN`.
+
+> Les jetons créés par `claude setup-token` **ne conviennent pas** : ils sont limités à l'utilisation des modèles
+> et le service refuse de leur donner l'utilisation (`403 … scope requirement user:profile`).
+>
+> Le jeton de connexion expire au bout de quelques heures ; Claude Code le renouvelle quand il tourne.
+> Si Claude Code n'a pas été utilisé depuis un moment, le widget l'indique et reprend dès que Claude Code a servi.
+
+Le jeton n'est envoyé qu'au service d'Anthropic (`api.anthropic.com`) et n'est jamais journalisé.
+En cas d'erreur temporaire, les dernières valeurs restent affichées et l'info-bulle signale le problème.
+
+> Ce service est celui qu'utilise Claude Code ; il n'est pas documenté publiquement et peut évoluer.
+
 ## Écrire un widget
 
 1. Créez une bibliothèque de classes `net10.0-windows` avec `<UseWPF>true</UseWPF>`.
@@ -156,6 +193,7 @@ public sealed class HelloWidget : TaskbarWidget
 Pour aller plus loin :
 - `CreateView()` : renvoyez votre propre `FrameworkElement` WPF (son `DataContext` est le widget) ;
 - `OnClick()` : action au clic gauche ;
+- `MenuOptions` : options proposées dans le menu (clic droit > Réglages des widgets), enregistrées dans `options` ;
 - `MinValueWidth`, `DefaultOrder`, `EnabledByDefault` ;
 - `PdhQuery` : lecture simple des compteurs de performance Windows (chemins anglais, indépendants de la langue).
 
@@ -184,7 +222,8 @@ si le bouton Widgets de Windows affiche la météo (il est alors plus large) ou 
 ```
 src/TaskbarWidgets.Sdk/     API des widgets (TaskbarWidget, WidgetContext, PdhQuery, Units)
 src/TaskbarWidgets/         application hôte WPF + widgets intégrés
-samples/…Sample.Uptime/     exemple de plugin
+plugins/…ClaudeUsage/       plugin Claude Code (vue personnalisée à deux barres, option de menu)
+samples/…Sample.Uptime/     exemple de plugin minimal
 tools/publish.ps1           génère dist\ (exécutable autonome prêt à l'emploi)
 tools/make-icon.ps1         génère l'icône de l'exécutable (src/TaskbarWidgets/Assets/TaskbarWidgets.ico)
 ```

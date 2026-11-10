@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Plugin : utilisation de l'abonnement Claude Code (fenêtres de 5 heures et de 7 jours). -->
+  <PropertyGroup>
+    <RootNamespace>TaskbarWidgets.ClaudeUsage</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Private=false : le SDK est fourni par l'application hôte, il ne doit pas être copié avec le plugin. -->
+    <ProjectReference Include="..\..\src\TaskbarWidgets.Sdk\TaskbarWidgets.Sdk.csproj" Private="false" />
+  </ItemGroup>
+
+  <!-- En développement : copie le plugin dans le dossier Widgets de l'application compilée. -->
+  <Target Name="CopyToHostWidgets" AfterTargets="Build">
+    <PropertyGroup>
+      <HostWidgetsDir>$(MSBuildThisFileDirectory)..\..\src\TaskbarWidgets\bin\$(Configuration)\$(TargetFramework)\Widgets\</HostWidgetsDir>
+    </PropertyGroup>
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(HostWidgetsDir)" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

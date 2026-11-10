@@ -1,5 +1,5 @@
 # Publie l'application dans dist\ : un exécutable autonome (runtime .NET inclus), prêt à copier et lancer.
-#   pwsh tools/publish.ps1           → dist\TaskbarWidgets.exe + plugin d'exemple dans dist\Widgets
+#   pwsh tools/publish.ps1           → dist\TaskbarWidgets.exe + plugins (plugins\ et exemple) dans dist\Widgets
 #   pwsh tools/publish.ps1 -NoSample → sans le plugin d'exemple
 param(
     [string]$Runtime = "win-x64",
@@ -46,6 +46,10 @@ function Clear-Dist {
     }
 }
 
+# Compiler d'abord : une erreur de compilation ne doit pas laisser dist\ vide.
+dotnet build (Join-Path $root "TaskbarWidgets.slnx") -c Release -p:DebugType=none
+if ($LASTEXITCODE -ne 0) { throw "Compilation échouée : dist\ n'a pas été modifié." }
+
 Clear-Dist
 
 dotnet publish (Join-Path $root "src\TaskbarWidgets\TaskbarWidgets.csproj") `
@@ -57,12 +61,15 @@ dotnet publish (Join-Path $root "src\TaskbarWidgets\TaskbarWidgets.csproj") `
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish a échoué." }
 Remove-Item (Join-Path $dist "*.xml") -ErrorAction SilentlyContinue # documentation du SDK, inutile à l'exécution
 
-if (-not $NoSample) {
-    $sample = Join-Path $root "samples\TaskbarWidgets.Sample.Uptime\TaskbarWidgets.Sample.Uptime.csproj"
-    dotnet build $sample -c Release -p:DebugType=none -o (Join-Path $root "samples\TaskbarWidgets.Sample.Uptime\bin\dist")
-    if ($LASTEXITCODE -ne 0) { throw "Compilation du plugin d'exemple échouée." }
+# Plugins livrés : tous les projets de plugins\, plus l'exemple de samples\ (sauf -NoSample).
+$plugins = @(Get-ChildItem (Join-Path $root "plugins") -Filter *.csproj -Recurse -ErrorAction SilentlyContinue)
+if (-not $NoSample) { $plugins += Get-Item (Join-Path $root "samples\TaskbarWidgets.Sample.Uptime\TaskbarWidgets.Sample.Uptime.csproj") }
+foreach ($plugin in $plugins) {
+    $out = Join-Path $plugin.DirectoryName "bin\dist"
+    dotnet build $plugin.FullName -c Release -p:DebugType=none -o $out
+    if ($LASTEXITCODE -ne 0) { throw "Compilation du plugin $($plugin.BaseName) échouée." }
     New-Item -ItemType Directory -Force (Join-Path $dist "Widgets") | Out-Null
-    Copy-Item (Join-Path $root "samples\TaskbarWidgets.Sample.Uptime\bin\dist\TaskbarWidgets.Sample.Uptime.dll") (Join-Path $dist "Widgets")
+    Copy-Item (Join-Path $out "$($plugin.BaseName).dll") (Join-Path $dist "Widgets")
 }
 
 Copy-Item (Join-Path $root "README.md"), (Join-Path $root "LICENSE") $dist

@@ -7,7 +7,9 @@ using TaskbarWidgets.Sdk;
 namespace TaskbarWidgets.Services;
 
 /// <summary>Un type de widget découvert (intégré ou plugin).</summary>
-public sealed record WidgetDescriptor(string Id, string DisplayName, bool EnabledByDefault, int DefaultOrder, Type Type, string Source)
+public sealed record WidgetDescriptor(
+    string Id, string DisplayName, bool EnabledByDefault, int DefaultOrder,
+    IReadOnlyList<WidgetMenuOption> MenuOptions, Type Type, string Source)
 {
     public TaskbarWidget Create() => (TaskbarWidget)Activator.CreateInstance(Type)!;
 }
@@ -167,6 +169,21 @@ public sealed class WidgetManager : IDisposable
         WidgetsChanged?.Invoke();
     }
 
+    /// <summary>Valeur actuelle d'une option de widget (celle de settings.json, sinon la valeur par défaut).</summary>
+    public string GetOption(string id, WidgetMenuOption option)
+        => GetConfig(id).Options is { } options && options.TryGetValue(option.Key, out var value) ? value : option.DefaultValue;
+
+    /// <summary>Modifie une option de widget, l'enregistre et redémarre ce widget seulement.</summary>
+    public void SetOption(string id, string key, string value)
+    {
+        var config = GetConfig(id);
+        config.Options ??= new Dictionary<string, string>();
+        config.Options[key] = value;
+        Save();
+        Start();
+        WidgetsChanged?.Invoke();
+    }
+
     public void Save() => _knownText = SettingsStore.Save(Settings) ?? _knownText;
 
     private void Discover()
@@ -213,7 +230,9 @@ public sealed class WidgetManager : IDisposable
                 {
                     using var probe = (TaskbarWidget)Activator.CreateInstance(type)!;
                     if (seen.Add(probe.Id))
-                        _available.Add(new WidgetDescriptor(probe.Id, probe.DisplayName, probe.EnabledByDefault, probe.DefaultOrder, type, source));
+                        _available.Add(new WidgetDescriptor(
+                            probe.Id, probe.DisplayName, probe.EnabledByDefault, probe.DefaultOrder,
+                            probe.MenuOptions, type, source));
                     else
                         Log.Error($"Widget « {probe.Id} » en double ignoré ({source}).");
                 }

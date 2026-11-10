@@ -36,6 +36,18 @@ public partial class TaskbarHostWindow : Window
     private TaskbarInfo? _current;
     private bool _screenUnavailable;
 
+    static TaskbarHostWindow()
+    {
+        // Les info-bulles sont des fenêtres à part que la barre des tâches recouvrirait : juste avant
+        // l'ouverture, on les place au-dessus de la barre (comme celles de Windows), alignées sur le widget.
+        EventManager.RegisterClassHandler(typeof(FrameworkElement), ToolTipService.ToolTipOpeningEvent,
+            new ToolTipEventHandler((sender, _) =>
+            {
+                if (sender is FrameworkElement owner && GetWindow(owner) is TaskbarHostWindow host)
+                    host.PlaceToolTipAboveTaskbar(owner);
+            }));
+    }
+
     public TaskbarHostWindow(WidgetManager manager)
     {
         InitializeComponent();
@@ -122,6 +134,15 @@ public partial class TaskbarHostWindow : Window
             });
             WidgetsPanel.Children.Add(view);
         }
+    }
+
+    private void PlaceToolTipAboveTaskbar(FrameworkElement owner)
+    {
+        // La fenêtre couvre exactement la hauteur de la barre : son bord haut est celui de la barre.
+        ToolTipService.SetPlacement(owner, PlacementMode.Top);
+        ToolTipService.SetPlacementTarget(owner, Root);
+        ToolTipService.SetHorizontalOffset(owner, owner.TranslatePoint(new Point(0, 0), Root).X);
+        ToolTipService.SetVerticalOffset(owner, -4);
     }
 
     private static void SafeClick(TaskbarWidget widget)
@@ -238,6 +259,10 @@ public partial class TaskbarHostWindow : Window
             menu.Items.Add(item);
         }
 
+        var widgetSettings = BuildWidgetSettingsMenu();
+        if (widgetSettings is not null)
+            menu.Items.Add(widgetSettings);
+
         menu.Items.Add(new Separator());
 
         var position = new MenuItem { Header = "Position" };
@@ -292,6 +317,36 @@ public partial class TaskbarHostWindow : Window
         menu.PlacementTarget = Root;
         menu.Placement = PlacementMode.MousePoint;
         menu.IsOpen = true;
+    }
+
+    /// <summary>« Réglages des widgets » &gt; widget &gt; option &gt; choix, pour les widgets qui en proposent.</summary>
+    private MenuItem? BuildWidgetSettingsMenu()
+    {
+        var root = new MenuItem { Header = "Réglages des widgets" };
+        foreach (var descriptor in _manager.Available.Where(d => d.MenuOptions.Count > 0))
+        {
+            var widgetItem = new MenuItem { Header = descriptor.DisplayName };
+            foreach (var option in descriptor.MenuOptions)
+            {
+                string current = _manager.GetOption(descriptor.Id, option);
+                var optionItem = new MenuItem { Header = option.Header };
+                foreach (var choice in option.Choices)
+                {
+                    var choiceItem = new MenuItem
+                    {
+                        Header = choice.Label,
+                        IsCheckable = true,
+                        IsChecked = string.Equals(choice.Value, current, StringComparison.OrdinalIgnoreCase),
+                    };
+                    string id = descriptor.Id, key = option.Key, value = choice.Value;
+                    choiceItem.Click += (_, _) => _manager.SetOption(id, key, value);
+                    optionItem.Items.Add(choiceItem);
+                }
+                widgetItem.Items.Add(optionItem);
+            }
+            root.Items.Add(widgetItem);
+        }
+        return root.Items.Count > 0 ? root : null;
     }
 
     private MenuItem BuildScreenMenu(AppSettings settings)

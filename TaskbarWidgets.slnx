@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/plugins/">
+    <Project Path="plugins/TaskbarWidgets.ClaudeUsage/TaskbarWidgets.ClaudeUsage.csproj" />
+  </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/TaskbarWidgets.Sample.Uptime/TaskbarWidgets.Sample.Uptime.csproj" />
   </Folder>
